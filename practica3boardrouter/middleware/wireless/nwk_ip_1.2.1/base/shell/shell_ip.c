@@ -227,6 +227,7 @@ static void SHELL_CoapAckReceive(coapSessionStatus_t sessionStatus, void *pData,
 
 /* Ping functions */
 static int8_t SHELL_Ping(uint8_t argc, char *argv[]);
+static int8_t SHELL_Setdest(uint8_t argc, char *argv[]);
 static ipPktInfo_t *PING_CreatePktInfo(ipAddr_t *pDstAddr, uint32_t payloadLen);
 static void PING_EchoReplyReceiveAsync(ipPktInfo_t *pRxIpPktInfo);
 static void PING_EchoReplyReceive(void *pParam);
@@ -315,7 +316,8 @@ static bool_t           mShellBoardIdentify = FALSE;
 /*==================================================================================================
 Public global variables declarations
 ==================================================================================================*/
-
+//direccion usada para enviar comandos en el boarder router
+extern ipAddr_t gCoapDestAddress;
 const cmd_tbl_t aShellCommands[] =
 {
     {
@@ -406,6 +408,7 @@ const cmd_tbl_t aShellCommands[] =
         ,NULL
 #endif /* SHELL_USE_AUTO_COMPLETE */
     },
+
     {
         "ping", SHELL_CMD_MAX_ARGS, 0, SHELL_Ping
 #if SHELL_USE_HELP
@@ -418,6 +421,18 @@ const cmd_tbl_t aShellCommands[] =
         ,NULL
 #endif /* SHELL_USE_AUTO_COMPLETE */
     },
+	  {
+	    "setdest", SHELL_CMD_MAX_ARGS, 0, SHELL_Setdest
+	#if SHELL_USE_HELP
+	        ,"Sets the app coap mensagge destination address",
+	        "IPv6 addresses\r\n"
+	        "   setdest <ip address> \r\n"
+	#endif /* SHELL_USE_HELP */
+	#if SHELL_USE_AUTO_COMPLETE
+	        ,NULL
+	#endif /* SHELL_USE_AUTO_COMPLETE */
+	    },
+
 #if DNS_ENABLED
     {
         "dnsrequest", SHELL_CMD_MAX_ARGS, 0, SHELL_SendDns
@@ -3635,6 +3650,70 @@ static int8_t SHELL_Ping
 
     return ret;
 }
+
+/*!*************************************************************************************************
+\private
+\fn     static int8_t  SHELL_Setdest(uint8_t argc, char *argv[])
+\brief  This function is used for "setdest" shell command.
+
+\param  [in]    argc      Number of arguments the command was called with
+\param  [in]    argv      Pointer to a list of pointers to the arguments
+
+\return         int8_t    Status of the command
+***************************************************************************************************/
+static int8_t SHELL_Setdest
+(
+    uint8_t argc,
+    char *argv[]
+)
+{
+
+    command_ret_t ret = CMD_RET_SUCCESS;
+    uint8_t i, ap = AF_UNSPEC;
+    char *pValue;
+    bool_t validDstIpAddr = FALSE;
+
+            /* Check if the destination IPv4/IPv6 address is valid */
+        for (i = 1; i < argc; i++)
+        {
+            /* Verify IP address (v4 or v6) */
+            uint8_t *pText = (uint8_t *)argv[i];
+
+            while (*pText != '\0')
+            {
+                if (*pText == '.')
+                {
+                    ap = AF_INET;
+                    break;
+                }
+                if (*pText == ':')
+                {
+                    ap = AF_INET6;
+                    break;
+                }
+                pText++;
+            }
+
+            if ((ap == AF_INET6) && (1 == pton(ap, argv[i], &gCoapDestAddress)))
+            {
+                validDstIpAddr = TRUE;
+                break;
+            }
+        }
+
+        if (!validDstIpAddr)
+        {
+            shell_write("Invalid destination IP address");
+            return CMD_RET_FAILURE;
+        }
+        else  {
+        	 shell_write("a very good destination IP address");
+        }
+
+
+    return ret;
+}
+
 
 /*!*************************************************************************************************
 \private

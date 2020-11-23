@@ -277,6 +277,62 @@ static uint16_t ADC16_ReadValue
     return adcValue;
 }
 #endif /* USE_TEMPERATURE_SENSOR */
+void* App_GetTempDataString2
+(
+    void
+)
+{
+#if USE_TEMPERATURE_SENSOR
+    /* Compute temperature */
+    int32_t temperature = 2*(int32_t)APP_GetCurrentTempValue();
+    uint8_t* pIndex = NULL;
+    uint8_t sTemp[] = "Humi:";
+    uint8_t * sendTemperatureData = MEM_BufferAlloc(TEMP_BUFF_SIZE);
+    if(NULL == sendTemperatureData)
+    {
+      return sendTemperatureData;
+    }
+
+    /* Clear data and reset buffers */
+    FLib_MemSet(sendTemperatureData, 0, TEMP_BUFF_SIZE);
+
+    /* Compute output */
+    pIndex = sendTemperatureData;
+    FLib_MemCpy(pIndex, sTemp, SizeOfString(sTemp));
+    pIndex += SizeOfString(sTemp);
+    NWKU_PrintDec((uint8_t)(temperature/100), pIndex, 2, TRUE);
+    pIndex += 2; /* keep only the first 2 digits */
+    *pIndex = '.';
+    pIndex++;
+    NWKU_PrintDec((uint8_t)(abs(temperature)%100), pIndex, 2, TRUE);
+    return sendTemperatureData;
+#else
+    return NULL;
+#endif
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /*===============================================================================================
 Private debug functions
 ==================================================================================================*/
